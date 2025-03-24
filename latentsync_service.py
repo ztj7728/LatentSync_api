@@ -18,7 +18,7 @@ class LatentSyncService:
             
         # Check if GPU supports float16
         is_fp16_supported = torch.cuda.is_available() and torch.cuda.get_device_capability()[0] > 7
-        dtype = torch.float16 if is_fp16_supported else torch.float32
+        self.dtype = torch.float16 if is_fp16_supported else torch.float32
         
         print("Loading models...")
         
@@ -44,7 +44,7 @@ class LatentSyncService:
         )
         
         # Load VAE
-        vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse", torch_dtype=dtype)
+        vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-mse", torch_dtype=self.dtype)
         vae.config.scaling_factor = 0.18215
         vae.config.shift_factor = 0
         
@@ -54,7 +54,7 @@ class LatentSyncService:
             inference_ckpt_path,
             device="cpu",
         )
-        denoising_unet = denoising_unet.to(dtype=dtype)
+        denoising_unet = denoising_unet.to(dtype=self.dtype)
         
         # Create pipeline
         self.pipeline = LipsyncPipeline(
@@ -63,6 +63,9 @@ class LatentSyncService:
             denoising_unet=denoising_unet,
             scheduler=scheduler,
         ).to("cuda")
+        
+        # Ensure all models use the same dtype
+        self.pipeline.to(dtype=self.dtype)
         
         print("Models loaded and ready for inference!")
 
@@ -95,7 +98,7 @@ class LatentSyncService:
             num_frames=self.config.data.num_frames,
             num_inference_steps=inference_steps,
             guidance_scale=guidance_scale,
-            weight_dtype=torch.float16,
+            weight_dtype=self.dtype,
             width=self.config.data.resolution,
             height=self.config.data.resolution,
             mask_image_path=self.config.data.mask_image_path,
