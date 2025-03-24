@@ -19,9 +19,27 @@ class InferenceRequest(BaseModel):
     device: str = "auto"
 
 class ModelService:
-    def __init__(self, unet_config_path, inference_ckpt_path):
-        self.device = "cpu"  # 默认设置
-        self.dtype = torch.float32  # 默认精度设置
+    def __init__(self, unet_config_path, inference_ckpt_path, device="auto"):
+        # 根据可用性设置设备
+        if device == "auto":
+            if torch.backends.mps.is_available():
+                self.device = "mps"
+                self.dtype = torch.float32  # MPS 不支持 float16
+                print("Using MPS (Apple Silicon)")
+            elif torch.cuda.is_available():
+                self.device = "cuda"
+                # 检查 GPU 是否支持 float16
+                is_fp16_supported = torch.cuda.get_device_capability()[0] > 7
+                self.dtype = torch.float16 if is_fp16_supported else torch.float32
+                print("Using CUDA")
+            else:
+                self.device = "cpu"
+                self.dtype = torch.float32
+                print("Using CPU")
+        else:
+            self.device = device
+            self.dtype = torch.float32 if device != "cuda" else torch.float16
+
         self.model = self.load_model(unet_config_path, inference_ckpt_path)
 
     def load_model(self, unet_config_path, inference_ckpt_path):
