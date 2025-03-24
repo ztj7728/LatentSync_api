@@ -23,15 +23,15 @@ class LatentSyncService:
         print("Loading models...")
         
         # Load config
-        config = OmegaConf.load(unet_config_path)
+        self.config = OmegaConf.load(unet_config_path)
         
         # Initialize scheduler
         scheduler = DDIMScheduler.from_pretrained("configs")
         
         # Load audio encoder
-        if config.model.cross_attention_dim == 768:
+        if self.config.model.cross_attention_dim == 768:
             whisper_model_path = "checkpoints/whisper/small.pt"
-        elif config.model.cross_attention_dim == 384:
+        elif self.config.model.cross_attention_dim == 384:
             whisper_model_path = "checkpoints/whisper/tiny.pt"
         else:
             raise NotImplementedError("cross_attention_dim must be 768 or 384")
@@ -39,8 +39,8 @@ class LatentSyncService:
         audio_encoder = Audio2Feature(
             model_path=whisper_model_path,
             device="cuda",
-            num_frames=config.data.num_frames,
-            audio_feat_length=config.data.audio_feat_length,
+            num_frames=self.config.data.num_frames,
+            audio_feat_length=self.config.data.audio_feat_length,
         )
         
         # Load VAE
@@ -50,7 +50,7 @@ class LatentSyncService:
         
         # Load UNet
         denoising_unet, _ = UNet3DConditionModel.from_pretrained(
-            OmegaConf.to_container(config.model),
+            OmegaConf.to_container(self.config.model),
             inference_ckpt_path,
             device="cpu",
         )
@@ -92,13 +92,13 @@ class LatentSyncService:
             audio_path=audio_path,
             video_out_path=output_path,
             video_mask_path=output_path.replace(".mp4", "_mask.mp4"),
-            num_frames=16,  # From config.data.num_frames
+            num_frames=self.config.data.num_frames,
             num_inference_steps=inference_steps,
             guidance_scale=guidance_scale,
             weight_dtype=torch.float16,
-            width=256,  # From config.data.resolution
-            height=256,  # From config.data.resolution
-            mask_image_path=None,  # From config.data.mask_image_path
+            width=self.config.data.resolution,
+            height=self.config.data.resolution,
+            mask_image_path=self.config.data.mask_image_path,
         )
         
         print(f"Inference complete! Output saved to {output_path}")
