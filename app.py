@@ -3,7 +3,7 @@ import torch
 from omegaconf import OmegaConf
 from scripts.inference import LipsyncPipeline, Audio2Feature, UNet3DConditionModel
 from diffusers import AutoencoderKL, DDIMScheduler
-from latentsync.utils import set_seed  # 确保这个 import 路径是正确的
+from accelerate.utils import set_seed  # 修正这里的导入路径
 from pydantic import BaseModel
 import os
 
