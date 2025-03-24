@@ -85,7 +85,7 @@ class ModelService:
         )
 
 # 初始化模型服务
-model_service = ModelService(unet_config_path="configs/unet.yaml", inference_ckpt_path="checkpoints/latentsync_unet.pt")
+model_service = ModelService(unet_config_path="configs/unet/stage2.yaml", inference_ckpt_path="checkpoints/latentsync_unet.pt")
 
 @app.post("/inference/")
 async def inference(request: InferenceRequest):
